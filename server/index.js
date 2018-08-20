@@ -1,0 +1,1 @@
+console.log(process.env.PRIVATE_KEY.replace(/\\n/g, '\n'));
