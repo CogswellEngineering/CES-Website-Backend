@@ -1,1 +1,1 @@
-console.log(process.env.PRIVATE_KEY.replace(/\\n/g, '\n'));
+console.log(process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'));
