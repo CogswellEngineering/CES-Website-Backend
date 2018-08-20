@@ -33,11 +33,38 @@ admin.initializeApp({
     storageBucket: "ceswebsite-cf841.appspot.com"
 });
 
+admin.firestore().settings({
+    timestampsInSnapshots: true,
+});
+
 //Stripe set up
 const stripe =  require("stripe")("sk_test_MWH2mjiatRAivWdPebpabXqj");
 
+//Node mailer set up.
+const nodemailer = require('nodemailer');
+const transporter = nodemailer.createTransport(
+
+    {
+     
+     host:'smtp.gmail.com',
+     secure:true,
+     port:465,
+     auth:{
+         //This also needs to not be in version control, all bad man lol. Even the private repos in companies don't have
+         //sensitive information like this.
+         user:process.env.NOTIFIER_EMAIL,
+         //Obviously, this needs to NOT just be here, but that's a different issue altogether.
+         pass:process.env.NOTIFIER_PASSWORD,
+     },
+
+    } 
+ );
+
+const PORT = process.env.PORT || 5000; 
+app.listen(PORT, () => {console.log("listening on port", PORT)});
 
 module.exports =  {
     app,
     admin,
+    emailer:transporter,
 };
