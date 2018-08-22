@@ -2,8 +2,12 @@ const {app, admin, emailer, stripe} = require("../../app");
 const fs = require('fs');
 const PRINTING_SERVICE_URL = "http://localhost:3001/"
 const {emailFooter } = require("../../email-templates");
+const UIDGenerator = require('uid-generator');
+const uidGenerator = new UIDGenerator();
 
-app.post('/order_print', (req,res) => {
+
+//LOW PRIORITY NOTE: Want to rename ordered prints to just models, makes more sense, do later, but not high priortiy
+app.post('/order_print',  (req,res) => {
 
 
  
@@ -17,8 +21,11 @@ app.post('/order_print', (req,res) => {
     file.mv(filePath);
    //It shouldn't be based on local path, preview does not include current directory.
 
-    //Uploads file into storage in queue
-    admin.storage().bucket().upload(filePath,{destination: "3DPrinterQueue/"+file.name+""+body.orderer})
+    //Uploads file into storage in queue Postfixed by orderer incase of repeated model names.
+    //Okay, but what if same user uploads? Then I actually need uid generator, instead. Again, SMALL chance works.
+    //I could use the doc key, okay instead of reverse. No cause then what is my reference? reference will be the uid I genreate.
+    const modelId = uidGenerator.generate();
+    admin.storage().bucket().upload(filePath,{destination: "3DPrinterQueue/"+file.name+"_"+body.orderer+"_"+modelId})
       .then(resolution => {
 
 
@@ -32,6 +39,7 @@ app.post('/order_print', (req,res) => {
         var duration = "TBD";
         var cost = "TBD";
 
+        //So primary foreign key for model in storage is(name,uid,modelId);
         docRef.set({
             'name' : file.name,
             'cost' : cost,
@@ -43,6 +51,8 @@ app.post('/order_print', (req,res) => {
             'started' : false,
             'orderTime' : new Date(),
             'orderer' : body.orderer,
+            'modelId' : modelId,
+         
 
         })
         .then( result => {
@@ -75,14 +85,21 @@ app.post('/order_print', (req,res) => {
                             //Log tha failed and need to manually send the email.
                             //Need to work on making a good logger.
                         })
+                    
+                    res.send({orderId:docRef.id});
+                    
                 })
                 .catch( err => {
-                    console.log("error",err);
+                    //If failed to add record, then delete it and send error back so they can restart process
+                    admin.storage().bucket("3DPrinterQueue/"+file.name+"_"+body.orderer+"_"+modelId).delete();
+
+                    //Null if it failed. Client side will respond accordingly.
+                    res.send({orderId:null});
+                    
                 })
           
             //This can happen before email finally sent, slight delay is fine versus longer load time on order.
 
-            res.send({orderId:docRef.id});
             //Removes the model from temporary.
             fs.unlink(filePath, () => {
                // console.log("removed from temp.");
@@ -244,3 +261,56 @@ app.post('/charge', async (req, res) => {
 
 
 });
+
+
+
+app.post('/pop_queue', (req,res) => {
+
+    const fileToRemove = req.file;
+    const removing = fileToRemove.Name;
+    const uid = req.user.uid;
+
+    //Cause orders of models as well.
+    const queueRef = admin.firebase.firestore().collection("PrinterServiceInfo").doc("OrderedPrints").collection("Queue");
+    
+    const docRef = queueRef.doc(uid + "_" + removing);
+
+
+    docRef.delete()
+    .then(val => {
+
+        const printerQueueRef = admin.storage().bucket("3DPrinterQueue");
+        const fileRef = printerQueueRef.file(removing);
+        
+        res.send(
+          {
+            name:removing,
+            data:fileRef,
+          });
+
+        admin.storage().bucket("3DPrinterQueue/"+removing).delete()
+        .then(val => {
+
+        })
+        .catch(err => {
+
+            //Set it back to what it was, atomicity.
+            docRef.set(fileToRemove);
+        })
+
+    })
+    .catch(err => {
+    });
+   
+  });
+
+  //Will upload model to share into shared models, not postfixed by user
+  //but instead 
+  app.post("/share-model", (req, res) => {
+
+        const body = req.body;
+
+        const sharingUser = body.user;
+        const model = req.files.model;
+
+  })
