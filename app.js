@@ -67,4 +67,5 @@ module.exports =  {
     app,
     admin,
     emailer:transporter,
+    stripe,
 };

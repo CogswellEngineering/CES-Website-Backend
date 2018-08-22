@@ -1,4 +1,4 @@
 require('dotenv/config');
 require('./../app');
-require('./../server/printing-service-routes.js');
+require('./../server/routes/printing-service.js');
 require('./../server/index');
