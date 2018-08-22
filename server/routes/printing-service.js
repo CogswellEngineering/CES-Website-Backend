@@ -304,13 +304,128 @@ app.post('/pop_queue', (req,res) => {
    
   });
 
-  //Will upload model to share into shared models, not postfixed by user
-  //but instead 
-  app.post("/share-model", (req, res) => {
+  /*Possible problems with this: I'm assuming the model is still in queue, not neccesarrily true.*/
+  /*But IT IS VERY LIKELY TO BE TRUE, here is flow:
+  Option 1: order print, given option to share. Guaranteed to be in queue
+  Option 2: print confirmed purchase, option to share. Guaranteed to be in queue if do before popping when finished.
+  Actually if do that would be better to place in a "finished" folder. Granted could store physical space of that,
+  and print the information instead of keep using memory for it. I could do finished folder, actually still might do that
+  so people can see their past purchases. How should I store that shit? Man this is literally E Commerce.
+  Storage would get passive to keep track of order history in storage. I could have order history just be description,
+  but not the model itself. I"ll keep that in physical storage in sd card or something not storage.*/
 
-        const body = req.body;
+  //People will share models after placing an order or after confirming the purchase, either way 
+  //Order indo will be loaded in on client side then will be passed into here.
+  app.post("/share-print", async (req, res) => {
 
-        const sharingUser = body.user;
-        const model = req.files.model;
+    const body = req.body;
 
-  })
+
+    //I don't want to force people to print to share.
+    //Or should share and upload model be different?
+    //Shared could be own category of shared prints
+    //then uploaded models could be just models people have. It's called printing service though so former makes sense.
+    const sharingUser = body.user;
+
+    const order = body.order;
+    const modelUid = order.name+"_"+order.orderer+"_"+order.modelId;
+
+    const storageRef = admin.storage();
+    const queueBucketRef = storageRef.bucket("3DPrinterQueue");
+    const sharedModelBucketRef = storageRef.bucket("SharedPrints");
+    const modelRef = queueBucketRef.file(modelUid);
+
+
+    //Copies file.
+    //Will be the exact same name.
+    modelRef.copy(sharedModelBucketRef.file(modelUid))
+        .then( response =>{
+
+            console.log("model shared");
+            console.log("response", response);
+
+            //Then if copied right, the user profile inventory also needs to be updated.
+
+            //How credit goes is this, let's say someone printing using someone else's model. It shows model used
+            //and shows the print itself and settings used.
+            //Each user has a Prints Collection readiy available, each Print will have an attribute for whether or not it's shared
+            //Object is print, property is whether or not it is shared. It's like inheritence vs composition, don't need deeper
+            //sub directory.
+            const printRef = admin.firestore().collection("users").doc(order.orderer).collection("Prints").doc(modelUid);
+
+            await printRef.update({
+                shared:true,
+            });
+            
+
+            res.send({shared:true});
+        })
+        .catch( err => {
+
+            console.log("error",err);
+            res.send({shared:false});
+        });
+
+
+});
+
+//Difference between shareing and posting is posting model, doesn't mean it has been printed.
+//Though not having this in would limit what's there, I think would be good option
+app.post("/share-model", (req, res) => {
+
+
+    const uid = req.body.user;
+    const uploadInfo = req.body.uploadInfo;
+
+    const model = req.files.model;
+
+    const rootBucket = admin.storage().bucket();
+    
+    const userRef = admin.firestore().collection("users").doc(uid);
+    const uploadedModelsRef = userRef.collection("UploadedModels");
+
+
+    //Don't need model id, here, most just add the extra number if alrdy exists, so I'll do that.
+    //Better than just letting them upload same, and ppl won't know diff based on name, that would be confusing
+    //on th eux side.
+
+    const filePath = "ModelTempHold"+model.name;
+    const modelId = model.name+"_"+uid;
+    model.mv(filePath);
+
+    await rootBucket.upload(filePath,{destination:"SharedModels/"+modelId})
+
+        .then(file => {
+
+
+            //Uploads info on shared model with ref to file in storage.
+            uploadedModelsRef.doc()
+                .set({
+
+                    //This will unwrap, maybe not best cause doesn't say what it's supposed to set to
+                    //but for saving time fine.
+                    ...uploadInfo,
+                    'modelRef': modelId,
+                })
+                .then( worked => {
+
+                    res.send({success});
+                })
+                .catch( err => {
+
+                    console.log(err);
+                    await sharedBucket.file(filePath).delete();
+                    res.send({error:"Failed to create record of upload"});
+                })
+
+        })
+        .catch(err => {
+
+            console.log("failed to upload model", err);
+            res.send({error:"Failed to upload"});
+        })
+
+        //Awaits for upload to finish, fail or not, before unlinking
+        fs.unlink(filePath);
+
+});
