@@ -1,6 +1,7 @@
 const {app, admin, emailer, stripe} = require("../../app");
 const fs = require('fs');
 const PRINTING_SERVICE_URL = "http://localhost:3001/"
+const {emailFooter } = require("../../email-templates");
 
 app.post('/order_print', (req,res) => {
 
@@ -61,7 +62,7 @@ app.post('/order_print', (req,res) => {
                         html: "<p>Hello, " + user.displayName + "</p><br>" + 
                         "<p>Your order has been processed. We will notify you when information on your print has been updated.</p><br><br>" + 
                         "<p> Click <a href='"+ linkToOrder + "'> here </a> to manage your order </p>" + 
-                        "<p> Best, <br> CES </p>",
+                        emailFooter
                     };
 
                     emailer.sendMail(mailOptions)
@@ -135,7 +136,7 @@ app.post("/update-print-order", (req, res) => {
                     subject:"Your 3DPrint order #" + orderId + " has been updated.",
                     html: "<p> Hello </p> <br> <p> Your order to print your model " + order.name + " has been updated</p>" + 
                     "<p> Click <a href = "+link+">here<a/> to view your order's status" +
-                    "<br><br> <p> Best, <br> Cogswell Engineering Society </p>",
+                    "<br><br> " + emailFooter
                 }
                 emailer.sendMail(mailOptions)
                     .then( resolved => {
@@ -209,7 +210,7 @@ app.post('/charge', async (req, res) => {
             html: "<p> Hello,"  + user.displayName +" </p><br>" +
                   "<p>Your ordered print is ready. Come pick up in room 140 at Cogswell College.</p>" + 
                   "<b> Please bring some form of identification </b><br>" +
-                  "<p> Best,<br> Cogswell Engineering Society <p> "
+                  emailFooter,
 
             };
 
