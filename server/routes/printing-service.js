@@ -1,31 +1,33 @@
 const {app, admin, emailer, stripe} = require("../../app");
 const fs = require('fs');
-const PRINTING_SERVICE_URL = "http://localhost:3001/"
+const PRINTING_SERVICE_URL = "http://localhost:3004"
 const {emailFooter } = require("../../email-templates");
 const UIDGenerator = require('uid-generator');
 const uidGenerator = new UIDGenerator();
 
-
 //LOW PRIORITY NOTE: Want to rename ordered prints to just models, makes more sense, do later, but not high priortiy
-app.post('/order_print',  (req,res) => {
+app.post('/order_print',  async (req,res) => {
 
-
- 
-    let file = req.files.model;
 
     
+
+    let file = req.files.model;
+    const body = req.body;
+
     //Hmm. I'd prefer it to be uid, so it's unique, so maybe I should reverse this to do firestore first, then upload to storage
     //I mean either way cancel if other fails.
     
     let filePath = "ModelTempHold/"+file.name;
     file.mv(filePath);
+    const modelId = await uidGenerator.generate();
+
+    const storageFilePath = "3DPrinterQueue" + file.name + "_" + body.orderer + "_" + modelId;
    //It shouldn't be based on local path, preview does not include current directory.
 
     //Uploads file into storage in queue Postfixed by orderer incase of repeated model names.
     //Okay, but what if same user uploads? Then I actually need uid generator, instead. Again, SMALL chance works.
     //I could use the doc key, okay instead of reverse. No cause then what is my reference? reference will be the uid I genreate.
-    const modelId = uidGenerator.generate();
-    admin.storage().bucket().upload(filePath,{destination: "3DPrinterQueue/"+file.name+"_"+body.orderer+"_"+modelId})
+    admin.storage().bucket().upload(filePath,{destination: storageFilePath})
       .then(resolution => {
 
 
@@ -33,13 +35,15 @@ app.post('/order_print',  (req,res) => {
         const queueRef = admin.firestore().collection("PrinterServiceInfo").doc("OrderedPrints").collection("Queue");
         
 
-        const docRef = queueRef.doc();
+        var docRef = queueRef.doc();
+
         var startTime = "TBD";
         var endTime = "TBD";  
         var duration = "TBD";
         var cost = "TBD";
 
         //So primary foreign key for model in storage is(name,uid,modelId);
+        console.log("here?? Body",body);
         docRef.set({
             'name' : file.name,
             'cost' : cost,
@@ -56,6 +60,8 @@ app.post('/order_print',  (req,res) => {
 
         })
         .then( result => {
+
+            console.log("Get to here?")
             const orderId = docRef.id;
 
                 admin.auth().getUser(body.orderer)
@@ -64,6 +70,7 @@ app.post('/order_print',  (req,res) => {
                     console.log("ordering user", user);
                       //Send id back to there, and to emailer.
                     const linkToOrder = PRINTING_SERVICE_URL + "/" + body.orderer + "/orders/" + orderId
+                    console.log("user email", user.email);
                     const mailOptions = {
 
                         from: process.env.NOTIFIER_EMAIL,
@@ -90,6 +97,7 @@ app.post('/order_print',  (req,res) => {
                     
                 })
                 .catch( err => {
+                   
                     //If failed to add record, then delete it and send error back so they can restart process
                     admin.storage().bucket("3DPrinterQueue/"+file.name+"_"+body.orderer+"_"+modelId).delete();
 
@@ -106,15 +114,16 @@ app.post('/order_print',  (req,res) => {
             });
         })
         .catch(err => {
-
+            console.log("or here", err);
         })
   
 
       })
       .catch(err => {
-        console.log(err);
+        admin.storage().bucket(storageFilePath).delete();
+        console.log("here",err);
       });
-});
+})
 
 
 app.post("/update-print-order", (req, res) => {
@@ -122,6 +131,7 @@ app.post("/update-print-order", (req, res) => {
     
     const orderInfo = req.body;
    
+    console.log("orderInfo", orderInfo);
     const dbRef = admin.firestore().collection("PrinterServiceInfo").doc("OrderedPrints").collection("Queue")
       .doc(orderInfo.orderId);
 
@@ -143,18 +153,22 @@ app.post("/update-print-order", (req, res) => {
           .then (user => {
 
                 const userEmail = user.email;
-                   
+                
+                console.log("email sending to", userEmail);
                 const link =  "'"+ PRINTING_SERVICE_URL + "/" + orderInfo.orderer + "/orders/"+orderId + "'";
 
                 const mailOptions = {
 
                     from: process.env.NOTIFIER_EMAIL,
-                    to:userEmail,
+                    to:"princebasiga@gmail.com",
                     subject:"Your 3DPrint order #" + orderId + " has been updated.",
                     html: "<p> Hello </p> <br> <p> Your order to print your model " + order.name + " has been updated</p>" + 
                     "<p> Click <a href = "+link+">here<a/> to view your order's status" +
                     "<br><br> " + emailFooter
                 }
+
+                console.log("mail options", mailOptions);
+
                 emailer.sendMail(mailOptions)
                     .then( resolved => {
 
@@ -264,7 +278,7 @@ app.post('/charge', async (req, res) => {
 
 
 
-app.post('/pop_queue', (req,res) => {
+app.post('/pop-queue', (req,res) => {
 
     const fileToRemove = req.file;
     const removing = fileToRemove.Name;
@@ -328,21 +342,24 @@ app.post('/pop_queue', (req,res) => {
     const sharingUser = body.user;
 
     const order = body.order;
+    //Nothing in this uid is unique, it's diff, because my thought process was copying it from queued, because makes sense that share it
+    //after you place order right? I'll keep it like that, still url but yeah.
     const modelUid = order.name+"_"+order.orderer+"_"+order.modelId;
 
     const storageRef = admin.storage();
     const queueBucketRef = storageRef.bucket("3DPrinterQueue");
+
+    //What will return is actual url to orderprint page, with query parameter of model loaded.
     const sharedModelBucketRef = storageRef.bucket("SharedPrints");
     const modelRef = queueBucketRef.file(modelUid);
 
 
     //Copies file.
     //Will be the exact same name.
+    //Does it actually need to be in it's own folder? I suppose I thought share was just uploading prints, but link does make sense.
     modelRef.copy(sharedModelBucketRef.file(modelUid))
         .then( response =>{
 
-            console.log("model shared");
-            console.log("response", response);
 
             //Then if copied right, the user profile inventory also needs to be updated.
 
@@ -351,19 +368,28 @@ app.post('/pop_queue', (req,res) => {
             //Each user has a Prints Collection readiy available, each Print will have an attribute for whether or not it's shared
             //Object is print, property is whether or not it is shared. It's like inheritence vs composition, don't need deeper
             //sub directory.
+
             const printRef = admin.firestore().collection("users").doc(order.orderer).collection("Prints").doc(modelUid);
 
-            await printRef.update({
-                shared:true,
-            });
+            printRef.update({
+                shareId:modelUid,
+            })
+            .then ( val => {
+
+                console.log("val", val);
+                res.send({url:modelUid});
+            })
+            .catch( err => {
+
+                console.log(err);
+            })
             
 
-            res.send({shared:true});
         })
         .catch( err => {
 
             console.log("error",err);
-            res.send({shared:false});
+            res.send({});
         });
 
 
@@ -371,7 +397,7 @@ app.post('/pop_queue', (req,res) => {
 
 //Difference between shareing and posting is posting model, doesn't mean it has been printed.
 //Though not having this in would limit what's there, I think would be good option
-app.post("/share-model", (req, res) => {
+app.post("/share-model",  (req, res) => {
 
 
     const uid = req.body.user;
@@ -393,7 +419,7 @@ app.post("/share-model", (req, res) => {
     const modelId = model.name+"_"+uid;
     model.mv(filePath);
 
-    await rootBucket.upload(filePath,{destination:"SharedModels/"+modelId})
+     rootBucket.upload(filePath,{destination:"SharedModels/"+modelId})
 
         .then(file => {
 
@@ -414,7 +440,7 @@ app.post("/share-model", (req, res) => {
                 .catch( err => {
 
                     console.log(err);
-                    await sharedBucket.file(filePath).delete();
+                    sharedBucket.file(filePath).delete();
                     res.send({error:"Failed to create record of upload"});
                 })
 

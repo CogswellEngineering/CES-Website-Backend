@@ -4,6 +4,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const cors = require('cors');
+var cookieParser = require('cookie-parser')
+
 
 const app = express();
 
@@ -12,7 +14,7 @@ app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 app.use(bodyParser.text());
 app.use(cors());
-
+app.use(cookieParser());
 
 //Firebase admin set up
 var admin = require('firebase-admin');
@@ -42,10 +44,11 @@ const stripe =  require("stripe")("sk_test_MWH2mjiatRAivWdPebpabXqj");
 
 //Node mailer set up.
 const nodemailer = require('nodemailer');
+
+
 const transporter = nodemailer.createTransport(
 
     {
-     
      host:'smtp.gmail.com',
      secure:true,
      port:465,

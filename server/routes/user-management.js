@@ -8,7 +8,11 @@ const UIDGenerator = require('uid-generator');
 const uidGenerator = new UIDGenerator();
 
 
-//In previous version I didn't do verifying email, I'll do here though
+/*
+
+    REGISTER ROUTES
+
+*/
 
 app.post('/register',(req,res)=>{
 
@@ -43,7 +47,6 @@ app.post('/register',(req,res)=>{
           verified: false,
        })
        .then(val => {
-         console.log(val);
 
          //Send success, then will check response, then send post request to send verification email.
          //I could call here, but semantics.
@@ -124,7 +127,11 @@ app.post("/send_account_verification", async (req,res) => {
 
 
 
-//Forget password and token routes.
+/*
+
+    FORGOT PASSWORD ROUTES
+
+*/
 
 
 
@@ -272,3 +279,38 @@ app.post("/token-used",(req,res)=>{
       })
    
   })
+
+
+
+/*
+
+  SSO ROUTES, to add here:
+  *This is the central server, that will generate auth token.
+
+*/
+
+
+//Can't just store refresh token in db or here...Can I, would have to be in cookies or cache, a local storage..
+
+//Could use this same route, to take in a refresh token, I could say fuck it and just have login page for each service.
+
+app.post("/generate-auth-token", (req,res) => {
+  
+  const authRef = admin.auth();
+
+
+  //Generates refresh token.
+  //
+
+  //Generates auth token.
+  authRef.createCustomToken(req.body.uid)
+    .then (customToken => {
+
+      console.log("custom token",customToken);
+      //Could send it here 
+      res.cookie('refreshToken')
+      res.cookie('authToken', )
+      res.send({token:customToken});
+    })
+
+});
