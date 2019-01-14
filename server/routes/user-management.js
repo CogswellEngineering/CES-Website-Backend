@@ -314,3 +314,78 @@ app.post("/generate-auth-token", (req,res) => {
     })
 
 });
+
+
+//User management I think is fitting place for this.
+app.post("/updateEventTrackers", async (req,res) => {
+
+
+    //Okay, sent here.
+   // console.log("req body", req.body);
+    const {eventTags, postId} = req.body;
+
+    //Okay, so this needs to first create the notification messsage.
+    //Then loop through event tags, pulling eventid in tag, thne loop through trackers.
+
+    //Subject and message will actually be created later.
+
+    
+    const firestore = admin.firestore();
+
+    const eventsRef = firestore.collection("ClubInfo").doc("Events").collection("EventList");
+
+    eventTags.forEach( tag => {
+
+
+      const eventId = tag.eventUid;
+
+      const docRef = eventsRef.doc(eventId);
+
+      docRef.get()
+        .then (eventSnapshot => {
+
+
+          const event = eventSnapshot.data();
+
+         // console.log("event", event);
+          const trackersRef = docRef.collection("Trackers");
+    
+          const newsPath = "http://localhost:3000/news";
+          trackersRef.get()   
+          .then (docsSnapshot => {
+    
+              docsSnapshot.docs.forEach( doc => {
+    
+                  //redundant check.
+                  if (doc.exists){
+    
+                    const trackerEmail = doc.data().email;
+                    const mailOptions = {
+    
+                      from: process.env.NOTIFIER_EMAIL,
+                      to: trackerEmail,
+                      subject: "Update on " + event.title,
+                      html: "<p> Hello, </p>" + 
+                      "<br><br><br>"+
+                      "<p> There has been a post related to the event you are tracking.</p>" +
+                      "<p> Here is <a href = " + newsPath + "/" + postId + "> link </a> to the post </p>" + 
+                      "<p> <br><br>Have a nice day</p>" 
+                    };
+
+                    emailer.sendMail(mailOptions)
+                      .then ( response => {
+
+                     //   console.log("email sent" ,response);
+                      })
+                      .catch( err => {
+
+                       // console.log("failed to send email: ", err);
+                      })
+                  }
+              })
+          })       
+        })
+     
+    })
+
+});
