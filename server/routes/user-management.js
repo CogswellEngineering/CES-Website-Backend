@@ -6,6 +6,9 @@ const CES__HOME_URL = "http://localhost:3000/"
 
 const UIDGenerator = require('uid-generator');
 const uidGenerator = new UIDGenerator();
+const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+
 
 
 /*
@@ -136,6 +139,7 @@ app.post("/send_account_verification", async (req,res) => {
 
 
 //Might replace this with firestore.
+//Idk why I have the distinction of expired tokens vs invalid. actually pretty stupid.
 app.get("/check-token",(req,res)=>{
 
     
@@ -239,46 +243,41 @@ app.post("/token-used",(req,res)=>{
       })
   
   })
-  app.post("/reset-password",(req,res)=>{
+  app.post("/reset-password", async (req,res)=>{
+
     const auth = admin.auth();
     const body = req.body;
-    
-    
+    console.log("body", req.body);
     //This can stay realtime, since no real organization to structure needed here.
-    auth.getUserByEmail(body.email)
-      .then(userRecord => {
-  
+    const userRecord = await auth.getUserByEmail(body.email);
+    const token = await uidGenerator.generate();
+    const dbRef = admin.database();
+    //Stores it alongside user.
+    const tokenRef = dbRef.ref("Tokens/"+token)
+    await tokenRef.push(userRecord.uid);
 
-        //Something to change, small chance. But still chance that this token is used
-        //BUt very low considering these will also expire.
-          uidGenerator.generate()
-            .then(token => {
-             
-              const dbRef = admin.database();
-              //Stores it alongside user.
-              dbRef.ref("Tokens/"+token).push(userRecord.uid);
+    const link = "'"+CES__HOME_URL+"account/reset?resetToken="+token+"'";
 
-              const link = "'"+homeURL+"account/reset?resetToken="+token+"'";
+    const mailOptions = {
+      from: process.env.NOTIFIER_EMAIL,
+      to: body.email,
+      subject:"Password Reset Request",
+      html:"<p> Hello </p> <br> " + 
+      "<p> Someone has requested a password reset for the account associated with this email. \
+      If you did not make this request, ignore this email. </p> \
+      <br><br><a href="+link+"> Click here to reset your password</a> <br><br> <p> Best, <br> Cogswell Engineering Society</p>",
+    }
 
-              const mailOptions = {
-                from: process.env.NOTIFIER_EMAIL,
-                to: body.email,
-                subject:"Password Reset Request",
-                html:"<p> Hello </p> <br> " + 
-                "<p> Someone has requested a password reset for the account associated with this email. \
-                If you did not make this request, ignore this email. </p> \
-                <br><br><a href="+link+"> Click here to reset your password</a> <br><br> <p> Best, <br> Cogswell Engineering Society</p>",
-              }
+    await emailer.sendMail(mailOptions);
+    res.send({});
 
-              emailer.sendMail(mailOptions);
-              res.send({});
-            })
-      })
-      .catch(err => {
-        console.log(err);
-      })
-   
-  })
+    //Then I want server to await then delete this token after a day.
+    //For testing low
+    await snooze(10000);
+  //  const expireRef = dbRef.ref("ExpiredTokens/"+token);
+  //  expireRef.push(token);
+    tokenRef.remove();
+});
 
 
 
@@ -338,6 +337,7 @@ app.post("/updateEventTrackers", async (req,res) => {
 
 
       const eventId = tag.eventUid;
+      if ( eventUid == null) return;
 
       const docRef = eventsRef.doc(eventId);
 
@@ -384,6 +384,10 @@ app.post("/updateEventTrackers", async (req,res) => {
                   }
               })
           })       
+        })
+        .catch(err => {
+
+          console.log("Failed to update trackers for an event", err);
         })
      
     })
