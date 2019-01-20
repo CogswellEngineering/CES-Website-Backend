@@ -47,6 +47,7 @@ app.post('/register',(req,res)=>{
           lastName : body.lastName,
           major : body.major,
           credits : 0,
+          role: "Member"
           verified: false,
        })
        .then(val => {
@@ -315,7 +316,68 @@ app.post("/generate-auth-token", (req,res) => {
 });
 
 
-//User management I think is fitting place for this.
+/*Updating users on posts*/
+
+
+app.post("/notifySubscribers", async (req,res) => {
+
+
+    //What kind of notice should be emailed
+    //And notice info
+    const {notificationType, notificationData} = req.body;
+
+    const firestore = admin.firestore();
+    const subsRef = firestore.collection("Subscribers");
+
+
+    subsRef.get()
+      .then(docsSnapshot => {
+
+          docsSnapshot.docs.forEach( docSnapshot => {
+
+
+
+            const subscriber = docSnapshot.data();
+
+            if ((notificationType == "News" && subscriber.hasNewsSubscription) || 
+            (notifcationType == "Event" && subscriber.hasEventsSubscription)){
+
+
+              //Then add to users to notify, or just notify off the bat instead of waiting.
+              const mailOptions = {
+
+                from:process.env.NOTIFIER_EMAIL,
+                to: subscriber.email,
+                subject: "There has been a new " + notificationType + "post!",
+                //This part could be cleaner, prob make functions for generating these.
+                html: "<p> Hello, </p> <br> " +
+                "<p> Click <a href = '" + notificationData.url + "'> here </a> to view the post</p>" +
+                emailFooter
+
+              };
+
+              emailer.sendMail(mailOptions)
+                .then (res => {
+
+                  console.log("email sent to " + subscriber.email);
+                })
+                .catch(err => {
+
+                  throw "Failed to notify " + subscriber.email;
+                })
+
+              
+            }
+          });
+      })
+      .catch (err => {
+
+      });
+
+
+
+});
+
 app.post("/updateEventTrackers", async (req,res) => {
 
 
@@ -368,8 +430,8 @@ app.post("/updateEventTrackers", async (req,res) => {
                       html: "<p> Hello, </p>" + 
                       "<br><br><br>"+
                       "<p> There has been a post related to the event you are tracking.</p>" +
-                      "<p> Here is <a href = " + newsPath + "/" + postId + "> link </a> to the post </p>" + 
-                      "<p> <br><br>Have a nice day</p>" 
+                      "<p> Here is the <a href = " + newsPath + "/" + postId + "> link </a> to the post </p>" + 
+                      emailFooter
                     };
 
                     emailer.sendMail(mailOptions)
@@ -379,7 +441,7 @@ app.post("/updateEventTrackers", async (req,res) => {
                       })
                       .catch( err => {
 
-                       // console.log("failed to send email: ", err);
+                        console.log("failed to send email: ", err);
                       })
                   }
               })
