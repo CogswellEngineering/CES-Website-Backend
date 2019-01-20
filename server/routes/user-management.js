@@ -47,7 +47,7 @@ app.post('/register',(req,res)=>{
           lastName : body.lastName,
           major : body.major,
           credits : 0,
-          role: "Member"
+          role: "Member",
           verified: false,
        })
        .then(val => {
@@ -319,7 +319,7 @@ app.post("/generate-auth-token", (req,res) => {
 /*Updating users on posts*/
 
 
-app.post("/notifySubscribers", async (req,res) => {
+app.post("/notifySubscribers", (req,res) => {
 
 
     //What kind of notice should be emailed
