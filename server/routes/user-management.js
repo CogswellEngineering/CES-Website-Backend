@@ -382,7 +382,7 @@ app.post("/notifySubscribers", (req,res) => {
                   console.log(err);
                   success = false;
 
-                  res.send(err:"Failed to notify " + subscruiber.email);
+                  res.send({error:"Failed to notify " + subscruiber.email});
                 })
 
               
