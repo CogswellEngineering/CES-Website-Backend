@@ -331,6 +331,7 @@ app.post("/notifySubscribers", (req,res) => {
       console.log("req",req);
       res.header("Access-Control-Allow-Origin", "*");
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      res.send();
       var success = true;
 
     //What kind of notice should be emailed
@@ -374,7 +375,6 @@ app.post("/notifySubscribers", (req,res) => {
                 .then (res => {
 
                   console.log("email sent to " + subscriber.email);
-                  res.send({success:true});
 
                 })
                 .catch(err => {
@@ -382,7 +382,6 @@ app.post("/notifySubscribers", (req,res) => {
                   console.log(err);
                   success = false;
 
-                  res.send({error:"Failed to notify " + subscruiber.email});
                 })
 
               
@@ -393,7 +392,6 @@ app.post("/notifySubscribers", (req,res) => {
       })
       .catch (err => {
         success = false;
-        res.send({success});
 
       });
 
