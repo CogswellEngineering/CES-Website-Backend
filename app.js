@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const cors = require('cors');
+var nodeoutlook = require('nodejs-nodemailer-outlook')
 
 var cookieParser = require('cookie-parser')
 

@@ -28,6 +28,7 @@
     "firebase-admin": "^6.0.0",
     "fs": "^0.0.1-security",
     "js-cookie": "^2.2.0",
+    "nodejs-nodemailer-outlook": "^1.0.8",
     "nodemailer": "^4.6.8",
     "stripe": "^6.7.0",
     "uid-generator": "^1.0.0"
