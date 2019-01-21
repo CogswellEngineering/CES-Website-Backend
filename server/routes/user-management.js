@@ -319,14 +319,19 @@ app.post("/generate-auth-token", (req,res) => {
 /*Updating users on posts*/
 
 
+app.get("/notifySubscribers", (req,res) => {
+
+
+    res.send("<p> test </p>");
+})
+
 app.post("/notifySubscribers", (req,res) => {
 
 
       console.log("req");
       res.header("Access-Control-Allow-Origin", "*");
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-      res.send();
-      
+      var success = true;
 
     //What kind of notice should be emailed
     //And notice info
@@ -369,6 +374,7 @@ app.post("/notifySubscribers", (req,res) => {
                 })
                 .catch(err => {
 
+                  success = false;
                   throw "Failed to notify " + subscriber.email;
                 })
 
@@ -377,10 +383,11 @@ app.post("/notifySubscribers", (req,res) => {
           });
       })
       .catch (err => {
-
+        success = false;
       });
 
       
+      res.send({success});
 
 
 });
