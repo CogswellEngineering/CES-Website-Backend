@@ -322,6 +322,12 @@ app.post("/generate-auth-token", (req,res) => {
 app.post("/notifySubscribers", (req,res) => {
 
 
+      console.log("req");
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      res.send();
+      
+
     //What kind of notice should be emailed
     //And notice info
     const {notificationType, notificationData} = req.body;
@@ -374,6 +380,7 @@ app.post("/notifySubscribers", (req,res) => {
 
       });
 
+      
 
 
 });
