@@ -373,7 +373,7 @@ app.post("/notifySubscribers", (req,res) => {
                 })
                 .catch(err => {
 
-                  console.log(err);
+                  console.log("Failed to send email to " + subscriber.email, err);
                   success = false;
 
                 })
@@ -455,11 +455,11 @@ app.post("/updateEventTrackers", async (req,res) => {
                     emailer.sendMail(mailOptions)
                       .then ( response => {
 
-                     //   console.log("email sent" ,response);
+                        console.log("email sent" ,response);
                       })
                       .catch( err => {
 
-                        console.log("failed to send email: ", err);
+                        console.log("failed to send email: " + subscriber.email, err);
                       })
                   }
               })
