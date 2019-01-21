@@ -1,5 +1,7 @@
 require('dotenv/config');
 require('./../app');
+require('./../email-templates.js');
+
 require('./../server/routes/printing-service.js');
 require('./../server/routes/user-management.js');
 require('./../server/index');
