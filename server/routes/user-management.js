@@ -344,7 +344,8 @@ app.post("/notifySubscribers", (req,res) => {
 
 
             const subscriber = docSnapshot.data();
-
+            console.log("body", req.body);
+            console.log("subscriber", subscriber);
             if ((notificationType == "News" && subscriber.hasNewsSubscription) || 
             (notifcationType == "Event" && subscriber.hasEventsSubscription)){
 
