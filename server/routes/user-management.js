@@ -328,7 +328,7 @@ app.get("/notifySubscribers", (req,res) => {
 app.post("/notifySubscribers", (req,res) => {
 
 
-      console.log("req");
+      console.log("req",req);
       res.header("Access-Control-Allow-Origin", "*");
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       var success = true;
@@ -367,24 +367,28 @@ app.post("/notifySubscribers", (req,res) => {
 
               };
 
-              console.log("emailer", emailer);
+              //So is for sure logged in
+              //console.log("emailer", emailer);
 
               emailer.sendMail(mailOptions)
                 .then (res => {
 
                   console.log("email sent to " + subscriber.email);
+                  res.send({success:true});
+
                 })
                 .catch(err => {
 
+                  console.log(err);
                   success = false;
-                  throw "Failed to notify " + subscriber.email;
+
+                  res.send(err:"Failed to notify " + subscruiber.email);
                 })
 
               
             }
           });
         
-        res.send({success});
 
       })
       .catch (err => {
