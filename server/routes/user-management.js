@@ -334,6 +334,7 @@ app.post("/notifySubscribers", (req,res) => {
 
     const firestore = admin.firestore();
     const subsRef = firestore.collection("Subscribers");
+    console.log("body", req.body);
 
 
     subsRef.get()
@@ -344,7 +345,6 @@ app.post("/notifySubscribers", (req,res) => {
 
 
             const subscriber = docSnapshot.data();
-            console.log("body", req.body);
             console.log("subscriber", subscriber);
             if ((notificationType == "News" && subscriber.hasNewsSubscription) || 
             (notifcationType == "Event" && subscriber.hasEventsSubscription)){
@@ -380,6 +380,10 @@ app.post("/notifySubscribers", (req,res) => {
                 })
 
               
+            }
+            else{
+
+              console.log(subscriber.email + " is not subscribed");
             }
           });
         
