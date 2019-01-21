@@ -347,7 +347,7 @@ app.post("/notifySubscribers", (req,res) => {
             const subscriber = docSnapshot.data();
             console.log("subscriber", subscriber);
             if ((notificationType == "News" && subscriber.hasNewsSubscription) || 
-            (notifcationType == "Event" && subscriber.hasEventsSubscription)){
+            (notificationType == "Event" && subscriber.hasEventsSubscription)){
 
 
               //Then add to users to notify, or just notify off the bat instead of waiting.
