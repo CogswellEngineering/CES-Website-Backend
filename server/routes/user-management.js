@@ -271,12 +271,7 @@ app.post("/token-used",(req,res)=>{
 
     await emailer.sendMail(mailOptions);
     res.send({});
-
-    //Then I want server to await then delete this token after a day.
-    //For testing low
-    await snooze(10000);
-  //  const expireRef = dbRef.ref("ExpiredTokens/"+token);
-  //  expireRef.push(token);
+    await snooze(86400 * 100);
     tokenRef.remove();
 });
 
@@ -288,11 +283,6 @@ app.post("/token-used",(req,res)=>{
   *This is the central server, that will generate auth token.
 
 */
-
-
-//Can't just store refresh token in db or here...Can I, would have to be in cookies or cache, a local storage..
-
-//Could use this same route, to take in a refresh token, I could say fuck it and just have login page for each service.
 
 app.post("/generate-auth-token", (req,res) => {
   
@@ -396,18 +386,12 @@ app.post("/notifySubscribers", (req,res) => {
 
 });
 
-app.post("/updateEventTrackers", async (req,res) => {
+app.post("/updateEventTrackers", (req,res) => {
 
-
-    //Okay, sent here.
-   // console.log("req body", req.body);
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.send({});
     const {eventTags, postId} = req.body;
-
-    //Okay, so this needs to first create the notification messsage.
-    //Then loop through event tags, pulling eventid in tag, thne loop through trackers.
-
-    //Subject and message will actually be created later.
-
     
     const firestore = admin.firestore();
 
@@ -417,7 +401,7 @@ app.post("/updateEventTrackers", async (req,res) => {
 
 
       const eventId = tag.eventUid;
-      if ( eventUid == null) return;
+      if ( eventId == null) return;
 
       const docRef = eventsRef.doc(eventId);
 
@@ -455,7 +439,7 @@ app.post("/updateEventTrackers", async (req,res) => {
                     emailer.sendMail(mailOptions)
                       .then ( response => {
 
-                     //   console.log("email sent" ,response);
+                        console.log("email sent" ,response);
                       })
                       .catch( err => {
 

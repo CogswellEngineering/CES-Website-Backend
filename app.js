@@ -15,8 +15,11 @@ app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 app.use(bodyParser.text());
 app.use(cors({credentials: true, origin: true}));
+
+//Ideally, this is just set for all of them.
 app.use( (req,res,next) => {
 
+    //Need to replace later
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
