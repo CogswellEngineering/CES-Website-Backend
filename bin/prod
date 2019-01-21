@@ -1,0 +1,4 @@
+require('./../app');
+require('./../server/routes/printing-service.js');
+require('./../server/routes/user-management.js');
+require('./../server/index');
