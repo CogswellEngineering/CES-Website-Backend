@@ -367,6 +367,8 @@ app.post("/notifySubscribers", (req,res) => {
 
               };
 
+              console.log("emailer", emailer);
+
               emailer.sendMail(mailOptions)
                 .then (res => {
 
@@ -381,13 +383,17 @@ app.post("/notifySubscribers", (req,res) => {
               
             }
           });
+        
+        res.send({success});
+
       })
       .catch (err => {
         success = false;
+        res.send({success});
+
       });
 
       
-      res.send({success});
 
 
 });
