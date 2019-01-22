@@ -2,7 +2,7 @@ const {app, admin, emailer,} = require("../../app");
 const {emailFooter } = require("../../email-templates");
 
 //This will all be in config later.
-const CES__HOME_URL = "http://localhost:3000/"
+const CES__HOME_URL = process.env.CES__HOME_URL;
 
 const UIDGenerator = require('uid-generator');
 const uidGenerator = new UIDGenerator();
@@ -414,7 +414,7 @@ app.post("/updateEventTrackers", (req,res) => {
          // console.log("event", event);
           const trackersRef = docRef.collection("Trackers");
     
-          const newsPath = "http://localhost:3000/news";
+          const newsPath = CES__HOME_URL + "/news";
           trackersRef.get()   
           .then (docsSnapshot => {
     
