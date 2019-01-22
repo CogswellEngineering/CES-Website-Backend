@@ -257,7 +257,7 @@ app.post("/token-used",(req,res)=>{
     const tokenRef = dbRef.ref("Tokens/"+token)
     await tokenRef.push(userRecord.uid);
 
-    const link = "'"+CES__HOME_URL+"account/reset?resetToken="+token+"'";
+    const link = "'"+CES__HOME_URL+"/account/reset?resetToken="+token+"'";
 
     const mailOptions = {
       from: process.env.NOTIFIER_EMAIL,
