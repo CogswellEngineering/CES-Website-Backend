@@ -69,7 +69,7 @@ app.post('/order_print',  async (req,res) => {
 
                     console.log("ordering user", user);
                       //Send id back to there, and to emailer.
-                    const linkToOrder = PRINTING_SERVICE_URL + "/" + body.orderer + "/orders/" + orderId
+                    const linkToOrder = process.env.PRINTING_SERVICE_URL + "/" + body.orderer + "/orders/" + orderId
                     console.log("user email", user.email);
                     const mailOptions = {
 
@@ -155,7 +155,7 @@ app.post("/update-print-order", (req, res) => {
                 const userEmail = user.email;
                 
                 console.log("email sending to", userEmail);
-                const link =  "'"+ PRINTING_SERVICE_URL + "/" + orderInfo.orderer + "/orders/"+orderId + "'";
+                const link =  "'"+ process.env.PRINTING_SERVICE_URL + "/" + orderInfo.orderer + "/orders/"+orderId + "'";
 
                 const mailOptions = {
 

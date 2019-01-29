@@ -19,8 +19,8 @@ app.use(cors({credentials: true, origin: true}));
 //Ideally, this is just set for all of them.
 app.use( (req,res,next) => {
 
-    //Need to replace later
-    res.header("Access-Control-Allow-Origin", "*");
+    //Need to replace later, this should be fine.
+    res.header("Access-Control-Allow-Origin", process.env.CES__HOME_URL);
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
@@ -70,7 +70,7 @@ const transporter = nodemailer.createTransport(
          pass:process.env.NOTIFIER_PASSWORD,
      },
 
-    } 
+    }   
  );
 
 const PORT = process.env.PORT || 5000; 

@@ -313,13 +313,9 @@ app.post("/notifySubscribers", (req,res) => {
 
 
       console.log("req",req);
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       var success = true;
       res.send(success);
 
-    //What kind of notice should be emailed
-    //And notice info
     const {notificationType, notificationData} = req.body;
 
     const firestore = admin.firestore();
@@ -387,9 +383,6 @@ app.post("/notifySubscribers", (req,res) => {
 });
 
 app.post("/updateEventTrackers", (req,res) => {
-
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.send({});
     const {eventTags, postId} = req.body;
     
